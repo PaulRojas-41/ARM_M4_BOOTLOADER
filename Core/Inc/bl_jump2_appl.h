@@ -20,11 +20,10 @@
 
 /* global objects */
 typedef struct{
+	uint32_t ota_flag;
 	uint32_t magic_number;
 	uint32_t crc32;
 	uint32_t appl_size;
-	uint32_t ota_flag;
-	uint32_t checksum;
 }appl_header_t;
 
 /* global methods */

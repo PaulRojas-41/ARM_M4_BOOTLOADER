@@ -6,6 +6,7 @@
  */
 
 
+#include "bl_ota_handler.h"
 #include "bl_jump2_appl.h"
 #include "crc32.h"
 #include "stm32f4xx.h"
@@ -54,36 +55,44 @@ uint8_t BL_appl_valid_error_code;
 uint8_t BL_is_appl_valid(void)
 {
 	/*1. parameters that Bootloader verifies before jump or give control to the application
-	 * : get header's application key to validate */
+	 *1get header's application key to validate */
 	uint32_t appl_header_val = APPL_HEADER_START_ADDR;
 	const appl_header_t *appl_header = (appl_header_t *)appl_header_val; /* we make appl's header value behave as an address */
 
-	/*2. Basic validation before jump to the appl: read the "Valid Key" store inside header's application flash slot */
-	if(appl_header->magic_number != APPL_VALID_KEY)
+	/* High prio validation before check the entire appl_header parameters */
+	uint8_t bl_get_ota_request = bl_check_ota_request();
+
+	if(bl_get_ota_request)
 	{
-		BL_appl_valid_error_code |= 0x00000001;
+		BL_appl_valid_error_code |= 0x00000010; /* 1 0000 */
 	}
 
-	/*3. Sanity check: verify if we are jumping to the correct reset handler address defined in the flash sector */
+	/*1. Basic validation before jump to the appl: read the "Valid Key" store inside header's application flash slot */
+	if(appl_header->magic_number != APPL_VALID_KEY)
+	{
+		BL_appl_valid_error_code |= 0x00000001; /* 0001 */
+	}
+
+	/*2. Sanity check: verify if we are jumping to the correct reset handler address defined in the flash sector */
 	uint32_t reset_handler_addr = *(uint32_t *)(APPL_START_ADDR + 4);
 
 	if((reset_handler_addr & 0xFF00F000) != 0x800C000)
 	{
-		BL_appl_valid_error_code |= 0x00000002;
+		BL_appl_valid_error_code |= 0x00000002; /* 0010 */
 	}
 
-	/*4. Application Size verification */
+	/*3. Application Size verification */
 	if(appl_header->appl_size == 0 || appl_header->appl_size > APPL_MAX_SIZE)
 	{
-		BL_appl_valid_error_code |= 0x00000003;
+		BL_appl_valid_error_code |= 0x00000004; /* 0100 */
 	}
 
-	/*5. CRC32 value calculated verification */
+	/*4. CRC32 value calculated verification */
 	uint32_t bl_crc32_result = bl_get_crc32((uint8_t *)APPL_START_ADDR, appl_header->appl_size);
 
 	if(appl_header->crc32 != bl_crc32_result)
 	{
-		BL_appl_valid_error_code |= 0x00000004;
+		BL_appl_valid_error_code |= 0x00000008; /* 1000 */
 	}
 
 	return BL_appl_valid_error_code;

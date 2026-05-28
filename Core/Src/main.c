@@ -20,6 +20,7 @@
 #include "main.h"
 #include "crc32.h"
 #include "bl_jump2_appl.h"
+#include "bl_ota_handler.h"
 #include <stdio.h>
 
 /* Private includes ----------------------------------------------------------*/
@@ -55,6 +56,7 @@ uint8_t tx_bl_buffer2[] = {"Reset Handler address wrong...\n"};
 uint8_t tx_bl_buffer3[] = {"Application size problem...\n"};
 uint8_t tx_bl_buffer4[] = {"CRC32 problem......\n"};
 uint8_t tx_bl_buffer5[] = {"Application validation successful......\n"};
+uint8_t tx_bl_buffer6[] = {"OTA Requested...Downloading....\n"};
 
 /* USER CODE END PV */
 
@@ -115,6 +117,23 @@ int main(void)
   }
 
   uint8_t bl_appl_verification = BL_is_appl_valid();
+
+  if(bl_appl_verification & (1 << 4))
+  {
+	  for(uint32_t i =0; i<sizeof(tx_bl_buffer6);i++)
+	  {
+		 USART2->DR = tx_bl_buffer6[i];
+		 while(!(USART2->SR & (1 << 6)));
+		 HAL_Delay(10);
+	  }
+
+	  bl_clear_ota_request();
+
+	  while(1){
+	  	GPIOD->ODR^= (1 << 14);
+	  	HAL_Delay(500);
+	  }
+  }
 
   if(bl_appl_verification == 0x01)
   {
