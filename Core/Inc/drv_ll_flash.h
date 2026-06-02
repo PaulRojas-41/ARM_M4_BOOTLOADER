@@ -24,7 +24,7 @@
 
 /* External methods */
 
-void drv_erase_flash();
+void drv_erase_flash(uint8_t fls_sector);
 void drv_write_flash();
 void wait_flash_op();
 void drv_unlock_flash();

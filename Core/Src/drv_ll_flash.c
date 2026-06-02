@@ -8,18 +8,18 @@
 #include "drv_ll_flash.h"
 
 
-void drv_erase_flash()
+void drv_erase_flash(uint8_t fls_sector)
 {
 	/* Before each op r/w/e we need to UNLOCK the flash memory
 	 * Enable the erase operation
-	 * Number of sectors indicated in REG: SNB[3:0]: Sector number
+	 * Sector to be erased indicated in REG: SNB[3:0]: Sector number 2 starts from 0x0800 8000
 	 * Trigger the erase op
 	 * Wait until BUSY bit is cleared by HW
 	 * Clear bits of enable erase op and number of sectors */
 
 	while((FLASH->SR & (1 << 16)));
 	FLASH->CR |= (1 << 1);
-	FLASH->CR |= (2 << 3);
+	FLASH->CR |= (fls_sector << 3);
 	FLASH->CR |= (1 << 16);
 	while((FLASH->SR & (1 << 16)));
 	FLASH->CR &=~(1 << 1);

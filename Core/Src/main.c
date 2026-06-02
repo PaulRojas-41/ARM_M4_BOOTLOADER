@@ -56,7 +56,7 @@ uint8_t tx_bl_buffer2[] = {"Reset Handler address wrong...\n"};
 uint8_t tx_bl_buffer3[] = {"Application size problem...\n"};
 uint8_t tx_bl_buffer4[] = {"CRC32 problem......\n"};
 uint8_t tx_bl_buffer5[] = {"Application validation successful......\n"};
-uint8_t tx_bl_buffer6[] = {"OTA Requested...Downloading....\n"};
+uint8_t tx_bl_buffer6[] = {"OTA Requested: Downloading executing....\n"};
 
 /* USER CODE END PV */
 
@@ -116,10 +116,11 @@ int main(void)
   	HAL_Delay(10);
   }
 
-  uint8_t bl_appl_verification = BL_is_appl_valid();
 
-  if(bl_appl_verification & (1 << 4))
+/* OTA Request detection */
+  if(!bl_check_ota_request())
   {
+	  /* OTA indicator detected */
 	  for(uint32_t i =0; i<sizeof(tx_bl_buffer6);i++)
 	  {
 		 USART2->DR = tx_bl_buffer6[i];
@@ -127,13 +128,18 @@ int main(void)
 		 HAL_Delay(10);
 	  }
 
+	  /* Clear OTA indicator */
 	  bl_clear_ota_request();
 
+	  /*Led indicates that OTA flashing is in progress */
 	  while(1){
 	  	GPIOD->ODR^= (1 << 14);
 	  	HAL_Delay(500);
 	  }
   }
+
+  /* Application validation stage */
+  uint8_t bl_appl_verification = BL_is_appl_valid();
 
   if(bl_appl_verification == 0x01)
   {
